@@ -2,61 +2,91 @@ import express from "express";
 import axios from "axios";
 
 const app = express();
+
 app.use(express.json());
 
-// 🔑 GoHighLevel API KEY (سيأتي من Render لاحقاً)
 const GHL_API_KEY = process.env.GHL_API_KEY;
+const LOCATION_ID = process.env.LOCATION_ID;
 
-// اختبار السيرفر
+const ghl = axios.create({
+  baseURL: "https://services.leadconnectorhq.com",
+  headers: {
+    Authorization: `Bearer ${GHL_API_KEY}`,
+    Version: "2021-07-28",
+    Accept: "application/json",
+    "Content-Type": "application/json"
+  }
+});
+
 app.get("/", (req, res) => {
   res.send("MultiMeed AI Operator is running 🚀");
 });
 
-// إنشاء Pipeline في GoHighLevel
-app.post("/create_pipeline", async (req, res) => {
-  const { name, stages } = req.body;
-
-  try {
-    const response = await axios.post(
-      "https://services.leadconnectorhq.com/opportunities/pipelines/",
-      {
-        name,
-        stages
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${GHL_API_KEY}`,
-          "Content-Type": "application/json",
-          Version: "2021-07-28"
-        }
-      }
-    );
-
-    res.json(response.data);
-  } catch (err) {
-    res.status(500).json(err.response?.data || err.message);
-  }
-});
-
-// تشغيل السيرفر
+/**
+ * Test GoHighLevel connection
+ */
 app.get("/test-ghl", async (req, res) => {
   try {
-    const response = await axios.get(
-      "https://services.leadconnectorhq.com/locations/",
-      {
-        headers: {
-          Authorization: `Bearer ${GHL_API_KEY}`,
-          Version: "2021-07-28"
-        }
-      }
-    );
+    if (!LOCATION_ID) {
+      return res.status(400).json({
+        success: false,
+        error: "LOCATION_ID environment variable is missing"
+      });
+    }
 
-    res.json(response.data);
+    const response = await ghl.get(`/locations/${LOCATION_ID}`);
+
+    res.json({
+      success: true,
+      data: response.data
+    });
+
   } catch (err) {
-    res.status(500).json(err.response?.data || err.message);
+    res.status(err.response?.status || 500).json({
+      success: false,
+      error: err.response?.data || err.message
+    });
   }
 });
+
+/**
+ * Create Contact
+ */
+app.post("/create-contact", async (req, res) => {
+  try {
+    const response = await ghl.post("/contacts/", {
+      locationId: LOCATION_ID,
+      firstName: req.body.firstName,
+      lastName: req.body.lastName,
+      email: req.body.email,
+      phone: req.body.phone
+    });
+
+    res.json({
+      success: true,
+      data: response.data
+    });
+
+  } catch (err) {
+    res.status(err.response?.status || 500).json({
+      success: false,
+      error: err.response?.data || err.message
+    });
+  }
+});
+
+/**
+ * Health Check
+ */
+app.get("/health", (req, res) => {
+  res.json({
+    status: "online",
+    service: "MultiMeed AI Operator"
+  });
+});
+
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
-  console.log("Server running on port " + PORT);
+  console.log(`MultiMeed AI Operator running on port ${PORT}`);
 });
