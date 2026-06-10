@@ -39,6 +39,23 @@ app.post("/create_pipeline", async (req, res) => {
 });
 
 // تشغيل السيرفر
+app.get("/test-ghl", async (req, res) => {
+  try {
+    const response = await axios.get(
+      "https://services.leadconnectorhq.com/locations/",
+      {
+        headers: {
+          Authorization: `Bearer ${GHL_API_KEY}`,
+          Version: "2021-07-28"
+        }
+      }
+    );
+
+    res.json(response.data);
+  } catch (err) {
+    res.status(500).json(err.response?.data || err.message);
+  }
+});
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
