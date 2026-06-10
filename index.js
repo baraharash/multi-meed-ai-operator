@@ -85,6 +85,34 @@ app.get("/health", (req, res) => {
   });
 });
 
+/**
+ * Create Test Contact
+ */
+app.get("/create-test-contact", async (req, res) => {
+  try {
+    const testEmail = `test-${Date.now()}@multimeed.com`;
+
+    const response = await ghl.post("/contacts/", {
+      locationId: LOCATION_ID,
+      firstName: "Test",
+      lastName: "AI Operator",
+      email: testEmail,
+      phone: "+15555550123"
+    });
+
+    res.json({
+      success: true,
+      message: "Test contact created successfully",
+      data: response.data
+    });
+
+  } catch (err) {
+    res.status(err.response?.status || 500).json({
+      success: false,
+      error: err.response?.data || err.message
+    });
+  }
+});
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
